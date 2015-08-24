@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>Simple mp3 Player</title>
+	<script></script>
+</head>
+<body>
+
+
+播放器核心代码
+<pre>
+(function($) {
+	$.fn.player = function(e) {
+		this.each(function() {
+			$(this).after('<div class="progressbar-wrapper"><div class="start-button"><span class="play-control paly-button"></span></div><div class="play-progress"><div class="progressbar-box"><span class="progressbar"></span><span class="progressload"></span><span class="progresstime">00:00</span></div></div></div>');
+			var simplePlayer = $(this).get(0);
+			var button = $(this).parent().find('.start-button');
+			var progressbarWrapper = $(this).parent().find('.progressbar-box');
+			var progresstime =$(this).parent().find('.progresstime');
+			var progressbar = $(this).parent().find('.progressbar');
+			var progressload= $(this).parent().find('.progressload');
+			simplePlayer.volume = 1;
+			button.click(function() {
+				if (simplePlayer.paused) {
+					$.each($('audio'),
+					function() {
+						this.pause();
+						$(this).parent().find('.stop-control').addClass('play-control').removeClass('stop-control');
+					});
+					simplePlayer.play();
+				//	alertbox("开始播放音乐了~~",1,1000);
+					$(this).find('.play-control').addClass('stop-control').removeClass('play-control');
+				} else {
+					simplePlayer.pause();
+				//	alertbox("暂停播放音乐了~~",1,1000);
+					$(this).find('.stop-control').addClass('play-control').removeClass('stop-control');
+				}
+			});
+			progressbarWrapper.click(function(e) {
+				if (simplePlayer.duration != 0) {
+					left = $(this).offset().left;
+					offset = e.pageX - left;
+					percent = offset / progressbarWrapper.width();
+					duration_seek = percent * simplePlayer.duration;
+					simplePlayer.currentTime = duration_seek;
+				}
+			});
+			$(simplePlayer).bind('ended',
+			function(evt) {
+				simplePlayer.pause();
+				button.find('.stop-control').addClass('play-control').removeClass('stop-control');
+				progressbar.css('width', '0%');
+			});
+			$(simplePlayer).bind('timeupdate',
+			function(e) {
+				duration = this.duration;
+				time = this.currentTime;
+				fraction = time / duration;
+				percent = fraction * 100;
+				if (percent) progressbar.css('width', percent + '%');
+					time = duration - time;
+					if (isFinite(time) || time >= 0) {
+						var m = Math.floor(time / 60),
+						s = Math.floor(time) % 60;
+						progresstime.html((m < 10 ? '0' + m: m) + ':' + (s < 10 ? '0' + s: s))
+					}
+			});
+			var that = this;
+			simplePlayer.addEventListener('loadeddata',
+			function(e) {
+				var interval = setInterval(function() {
+					if (that.buffered.length < 1) return true;
+					progressload.css('width',(that.buffered.end(0) / that.duration) * 100 + '%');
+					if (Math.floor(that.buffered.end(0)) >= Math.floor(that.duration)) clearInterval(interval)
+				},
+				100);
+			});
+			if (simplePlayer.duration > 0) {
+				$(this).parent().css('display', 'block');
+			}
+			if ($(this).attr('autoplay') == 'autoplay') {
+				button.click();
+			}
+		});
+		return this;
+	};
+})(jQuery);
+</pre>
+CSS 样式列表
+<pre>
+.progressbar-wrapper{background-color:#f5f5f5;width:320px;margin:1em auto;height:30px;position:relative;border-radius:30px 2px 2px 30px;padding-right:10px}
+.progressbar-wrapper .start-button{width:30px;height:30px;position:absolute;left:0;top:0}
+.progressbar-wrapper .start-button .paly-button{font-style:normal;color:#CC2E9C;display:block;height:22px;width:22px;border:solid 4px #CC2E9C;border-radius:100%;text-align:center;line-height:22px;cursor:pointer}
+.progressbar-wrapper .start-button .paly-button:hover{opacity:.78}
+.progressbar-wrapper .start-button .play-control:before{content:'播'}
+.progressbar-wrapper .start-button .stop-control:before{content:'停'}
+.progressbar-wrapper .play-progress{margin-left:35px;height:30px;cursor:pointer}
+.progressbar-wrapper .progressbar-box{position:relative;width:100%}
+.progressbar-wrapper .progressbar-box .progressbar{position:absolute;border-radius:5px;display:block;left:0;top:12px;width:0;height:5px;background:#CC2E9C;z-index:1}
+.progressbar-wrapper .progressbar-box .progressload{position:absolute;border-radius:5px;display:block;left:0;top:12px;width:0;height:5px;background:#d2d2d2}
+.progressbar-wrapper .progressbar-box .progresstime{position:absolute;top:3px;right:-55px;z-index:2}
+<pre>
+使用方法
+加载JQuery之后
+<pre>
+$(document).ready(function() {
+	$(".player").player();
+});
+</pre>
+
+</body>
+</html>
